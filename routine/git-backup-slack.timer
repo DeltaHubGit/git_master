@@ -1,0 +1,9 @@
+[Unit]
+Description=Post the git backup result to Slack every morning at 08:00 Slovenian time
+
+[Timer]
+OnCalendar=*-*-* 08:00:00 Europe/Ljubljana
+Persistent=true
+
+[Install]
+WantedBy=timers.target

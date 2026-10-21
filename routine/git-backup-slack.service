@@ -1,0 +1,10 @@
+[Unit]
+Description=Post the git backup result that the night run saved to Slack
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=@GIT_MASTER@
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=@GIT_MASTER@/nightly.sh --post
+TimeoutStartSec=10min

@@ -1,0 +1,12 @@
+{
+  "github_owner": "your-github-account",
+  "git_name": "Your Name",
+  "git_email": "you@example.com",
+  "watch_dirs": ["~/projects"],
+  "slack_post": {"dir": "~/path/to/a/slack/poster", "command": ["uv", "run", "post.py", "--apply"]},
+  "projects": [
+    {"name": "my_project", "path": "~/projects/my_project"},
+    {"name": "team_bibles", "path": "~/projects/team_bibles", "github": "your-company/team_bibles"},
+    {"name": "git_master_config", "path": "~/.git_master"}
+  ]
+}

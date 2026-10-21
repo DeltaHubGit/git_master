@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git push * +*)",
+      "Bash(git -C * push --force*)",
+      "Bash(git -C * push -f*)",
+      "Bash(git -C * push * --force*)",
+      "Bash(git -C * push * -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git -C * reset --hard*)",
+      "Bash(git clean*)",
+      "Bash(git -C * clean*)",
+      "Bash(git checkout -- *)",
+      "Bash(git checkout .)",
+      "Bash(git -C * checkout -- *)",
+      "Bash(git -C * checkout .)",
+      "Bash(git restore *)",
+      "Bash(git -C * restore *)",
+      "Bash(git stash drop*)",
+      "Bash(git stash clear*)",
+      "Bash(git rebase*)",
+      "Bash(git -C * rebase*)",
+      "Bash(git pull --rebase*)",
+      "Bash(git pull -r*)",
+      "Bash(git -C * pull --rebase*)",
+      "Bash(git -C * pull -r*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/hooks/git_guard.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

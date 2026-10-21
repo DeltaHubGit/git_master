@@ -1,0 +1,18 @@
+# Platform binaries; setup.sh downloads the right ones
+tools/
+
+# Personal: each person's notes live in ~/.git_master/NOTES.md, linked here by setup.sh
+CLAUDE.local.md
+
+# Claude Code worktrees for side branches: their own repos, never part of this one
+.claude/worktrees/
+
+# Left over from the old layout (config and output now live in ~/.git_master)
+repos/
+reports/
+conflicts/
+
+.env
+.env.*
+__pycache__/
+.DS_Store

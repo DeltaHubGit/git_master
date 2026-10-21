@@ -1,0 +1,55 @@
+# --- git_master safety rules (appended to every repo's .gitignore) ---
+
+# Secrets & credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa*
+id_ed25519*
+credentials/
+*credentials*.json
+service_account*.json
+*service-account*.json
+token.json
+*token*.json
+secrets.*
+.netrc
+.npmrc
+.pypirc
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Local tool settings
+**/.claude/settings.local.json
+**/.obsidian/workspace.json
+
+# Dependencies, caches, build output
+.venv/
+venv/
+node_modules/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+~$*
+*.tmp
+*.bak
+
+# Claude Code worktrees: a side branch's own checkout, never part of the repo
+.claude/worktrees/

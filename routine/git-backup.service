@@ -1,0 +1,10 @@
+[Unit]
+Description=git_master nightly backup: pull, scan, commit and push every project; save the morning Slack text
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=@GIT_MASTER@
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=@GIT_MASTER@/nightly.sh
+TimeoutStartSec=2h

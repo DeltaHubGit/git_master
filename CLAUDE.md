@@ -17,7 +17,7 @@ anything personal in it. Each person's setup lives in their own `~/.git_master/`
   which Claude Code reads with this file. Personal facts and decisions go there, not here.
 
 Code: `setup.sh` (first run, `add`, `clone`), `sync.sh` (status / up / down), `push.sh`,
-`nightly.sh`, `gm.py` (the config), `visualize.py`, `commit_message.py`, `audit_pii.py`,
+`ignore.sh` (keep files out), `nightly.sh`, `gm.py` (the config), `visualize.py`, `commit_message.py`, `audit_pii.py`,
 `safety.gitignore` (credential/cache rules for every repo), `hooks/git_guard.py`. `tools/` holds
 `gh` and `gitleaks` for this computer (downloaded by setup.sh, not in git).
 
@@ -42,7 +42,8 @@ person. Walk them through it, one step at a time, in plain words:
 6. Optional, on a Linux computer that is always on: `./nightly.sh install` backs everything up at
    01:00. Only one computer per set of repos runs it. Otherwise they say "back up my work".
 7. Tell them what to say from now on: "back up my work", "get the latest changes", "visualize my
-   project". Anything personal you learn goes into `~/.git_master/NOTES.md`.
+   project", "keep this file out of git". Anything personal you learn goes into
+   `~/.git_master/NOTES.md`.
 
 ## Commit messages
 
@@ -93,6 +94,27 @@ is watching (the nightly, background jobs), write a message that says what chang
 
 1. `./sync.sh status`. Uncommitted work: back it up first, since `down` refuses to pull over it.
 2. `./sync.sh down [names]`: fast-forward, or a merge when both sides have new commits.
+
+## Keep files out ("ignore this file", "don't include this", "add it to .gitignore")
+
+1. Work out the repo and the pattern, and show the owner what it covers: `raw-photos/` a folder
+   anywhere, `/raw-photos/` only the top one, `*.zip` every zip file, `/briefs/old-draft.md` one
+   exact file (the path from the repo's top folder).
+2. `./ignore.sh <name> <pattern>...` adds it to the repo's `.gitignore`, which goes to GitHub, so
+   everyone working on the repo keeps it out too. Use `--local` instead when it concerns only this
+   person, or when the name itself should not be on GitHub (a client's name, "passwords"): the line
+   goes to `~/.git_master/rules/<name>.exclude` and never leaves the computer.
+3. If it says **ALREADY IN THE REPO**, the list does nothing for those files until they are
+   untracked. Ask the owner (AskUserQuestion) before `./ignore.sh --untrack <name> <pattern>...`,
+   and say what it does: the files stay in their folder and leave the repo with the next commit;
+   on other people's computers they disappear at their next pull (still recoverable from history);
+   older versions in the history keep them.
+4. Commit (ask for the message), then `./push.sh <name>`.
+
+Already pushed something sensitive? A password, key or token counts as leaked: tell the owner to
+change it or revoke it first. Removing a file from every old version means rewriting history and
+force-pushing, which breaks rule 4 and makes everyone re-clone: never do it yourself; explain it and
+leave the decision and the work to the owner.
 
 ## Conflicts
 

@@ -9,7 +9,8 @@ shows your history as a Sourcetree-style graph.
 1. Ask Claude: "Clone https://github.com/deltahubTadej/git_master into my projects folder".
 2. Open the new `git_master` folder in Claude Code and say **"set me up"**. It installs what it
    needs, logs you in to GitHub in the browser, and asks which folders to back up.
-3. From then on: **"back up my work"**, **"get the latest changes"**, **"visualize my project"**.
+3. From then on: **"back up my work"**, **"get the latest changes"**, **"visualize my project"**,
+   **"keep this file out of git"**.
 
 On a Mac, the first git command may ask to install Apple's developer tools: click Install.
 Needs git and Python 3 (both come with macOS and most Linux systems).

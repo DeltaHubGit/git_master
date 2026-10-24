@@ -53,6 +53,12 @@ identity() {
 
 first_run() {
   install_tools
+  # no screen (a server, an SSH session): gh cannot open a browser and would stop there, so "opening" it does nothing
+  # and the person opens https://github.com/login/device on another device and types the code shown
+  if [ "$(uname -s)" = Linux ] && [ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] && [ -z "${BROWSER:-}" ]; then
+    export BROWSER=true
+    echo "No screen here: when asked, press Enter, then open https://github.com/login/device on your phone or laptop and type the code."
+  fi
   "$GH" auth status >/dev/null 2>&1 || "$GH" auth login --hostname github.com --git-protocol https --web
   "$GH" auth setup-git >/dev/null
   python3 "$ROOT/gm.py" init --owner "$("$GH" api user --jq .login)"

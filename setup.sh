@@ -12,6 +12,10 @@ set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 
 install_tools() {
+  if { [ ! -x "$GH" ] || [ ! -x "$GITLEAKS" ]; } && [ ! -w "$ROOT" ]; then
+    echo "gh or gitleaks is missing in $ROOT/tools and this folder is read-only: ask the admin to install them" >&2
+    exit 1
+  fi
   mkdir -p "$ROOT/tools"
   local os cpu v t glcpu glos
   case "$(uname -s)" in Darwin) os=mac ;; Linux) os=linux ;; *) echo "unsupported OS" >&2; exit 1 ;; esac
@@ -52,8 +56,6 @@ first_run() {
   "$GH" auth status >/dev/null 2>&1 || "$GH" auth login --hostname github.com --git-protocol https --web
   "$GH" auth setup-git >/dev/null
   python3 "$ROOT/gm.py" init --owner "$("$GH" api user --jq .login)"
-  # Personal notes for the agent live with the config; Claude Code reads them as CLAUDE.local.md
-  if [ -f "$GM_HOME/NOTES.md" ] && [ ! -e "$ROOT/CLAUDE.local.md" ]; then ln -s "$GM_HOME/NOTES.md" "$ROOT/CLAUDE.local.md"; fi
   while IFS=$'\t' read -r name dir; do
     if [ -d "$dir/.git" ]; then apply_local_excludes "$name" "$dir"; echo "$name: ok ($dir)"
     elif [ -d "$dir" ]; then echo "$name: $dir is not a git repo yet: ./setup.sh add $dir"

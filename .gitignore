@@ -1,7 +1,8 @@
 # Platform binaries; setup.sh downloads the right ones
 tools/
 
-# Personal: each person's notes live in ~/.git_master/NOTES.md, linked here by setup.sh
+# Personal: each person's notes live in ~/.git_master/NOTES.md (CLAUDE.md imports them); older
+# setups linked them here
 CLAUDE.local.md
 
 # Claude Code worktrees for side branches: their own repos, never part of this one

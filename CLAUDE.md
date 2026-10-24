@@ -13,13 +13,19 @@ anything personal in it. Each person's setup lives in their own `~/.git_master/`
 - `rules/<name>.allow`: exact paths reviewed as OK despite a sensitive-looking filename.
 - `gitleaks-allow/<name>.gitleaksignore`: verified gitleaks false positives.
 - `reports/`, `conflicts/`, `visualize/`: local output.
-- `NOTES.md`: the person's own notes for the agent; `./setup.sh` links it here as `CLAUDE.local.md`,
-  which Claude Code reads with this file. Personal facts and decisions go there, not here.
+- `NOTES.md`: the person's own notes for the agent, read with this file through the import below.
+  Personal facts and decisions go there, not here.
+
+The person's notes: @~/.git_master/NOTES.md
 
 Code: `setup.sh` (first run, `add`, `clone`), `sync.sh` (status / up / down), `push.sh`,
 `ignore.sh` (keep files out), `nightly.sh`, `gm.py` (the config), `visualize.py`, `commit_message.py`, `audit_pii.py`,
 `safety.gitignore` (credential/cache rules for every repo), `hooks/git_guard.py`. `tools/` holds
 `gh` and `gitleaks` for this computer (downloaded by setup.sh, not in git).
+
+On a computer several people share, the admin installs this folder once (e.g. `/opt/git_master`, with
+`tools/`), read-only for everyone else; each person's `~/.git_master/` stays their own. Nothing in this
+folder is written while it runs, so one copy serves everyone, and only the admin changes or updates it.
 
 ## First run: "set me up"
 

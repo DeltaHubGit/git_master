@@ -101,6 +101,23 @@ is watching (the nightly, background jobs), write a message that says what chang
 1. `./sync.sh status`. Uncommitted work: back it up first, since `down` refuses to pull over it.
 2. `./sync.sh down [names]`: fast-forward, or a merge when both sides have new commits.
 
+## Get a repository ("get <repo> from GitHub", "clone …")
+
+1. Find it with `tools/gh repo view <owner>/<name>` (or `tools/gh search repos <words>`); show the owner what you
+   found (name, description, who owns it) and make sure it is the one they mean.
+2. Ask with AskUserQuestion what it is, because that decides where it goes:
+   - **A Claude agent** (it has a CLAUDE.md): `~/projects/work/<name>`, so it becomes one of their agents.
+   - **A GPT agent** (ChatGPT's Codex: an AGENTS.md): `~/projects/work/<name>` too; on a shared machine where GPT is
+     installed, then `/usr/lib/agent-board/codex-new ~/projects/work/<name> work` adds GPT's kit (it keeps every file
+     the repository has).
+   - **Something else, for the team** (a knowledge resource, documents, data): on a shared machine
+     `/srv/company/shared-resources/<name>`, where everyone can read it (say so); elsewhere ask where.
+   - **A project of their own** that is none of these: `~/projects/work/<name>` or wherever they say.
+3. `tools/gh repo clone <owner>/<name> <folder>`. Never into a folder that exists: ask for another name instead.
+4. Their own agents and projects get backed up: `./setup.sh add <folder>` (it keeps the repository's GitHub copy when
+   it is theirs). Not for a team resource in the shared folder, which has its own nightly snapshot.
+5. Say where it is, and for an agent: it is on their board now (a new session in it from Cmd+K).
+
 ## Keep files out ("ignore this file", "don't include this", "add it to .gitignore")
 
 1. Work out the repo and the pattern, and show the owner what it covers: `raw-photos/` a folder

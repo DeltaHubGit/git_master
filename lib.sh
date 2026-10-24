@@ -22,7 +22,7 @@ git() { command git -c core.quotepath=off "$@"; }
 
 # Filenames that may hold personal/financial/identity data. New or changed files
 # matching this need an explicit decision in rules/<name>.allow or rules/<name>.exclude.
-SENSITIVE_NAME_RE='bank|iban|revolut|paypal|account[ _-]?confirm|statement|izpisek|passport|potni[ _-]?list|osebna|id[ _-]?card|driver.?s?[ _-]?licen|payslip|salary|pla[cč]a|(^|[^a-z])tax([^a-z]|$)|dav[cč]n|password|geslo|credential|secret|recovery|backup[ _-]?codes|2fa|private[ _-]?key|wallet'
+SENSITIVE_NAME_RE='bank|iban|revolut|paypal|account[ _-]?confirm|statement|izpisek|passport|potni[ _-]?list|osebna|id[ _-]?card|driver.?s?[ _-]?licen|payslip|salary|pla[cč]a|(^|[^a-z])tax([^a-z]|$)|dav[cč]n|password|geslo|credential|secrets?([^a-z]|$)|secret[ _-]?key|client[ _-]?secret|recovery|backup[ _-]?codes|2fa|private[ _-]?key|wallet'
 # IBAN-shaped strings in text files (country code, 2 check digits, then 4-character groups).
 IBAN_RE='\b[A-Z]{2}[0-9]{2}( ?[0-9A-Z]{4}){3,7}( ?[0-9A-Z]{1,3})?\b'
 

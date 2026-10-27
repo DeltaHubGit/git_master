@@ -8,7 +8,8 @@ anything personal in it. Each person's setup lives in their own `~/.git_master/`
   git clone (`name`, `path`, and `github` when its online copy is not `github_owner/name`), plus
   `github_owner`, `git_name`/`git_email` for new repos, `watch_dirs` (folders to check for repos not
   backed up yet) and optional `slack_post` for the nightly summary. Read and edit it with `./gm.py`
-  (`list`, `add`, `remove`, `scan`), never by hand. Template: `config.example.json`.
+  (`list`, `add`, `remove`, `scan`, `get`/`set`, `watch`/`unwatch`), never by hand. Template:
+  `config.example.json`.
 - `rules/<name>.exclude`: gitignore patterns kept on this computer only (never pushed).
 - `rules/<name>.allow`: exact paths reviewed as OK despite a sensitive-looking filename.
 - `gitleaks-allow/<name>.gitleaksignore`: verified gitleaks false positives.
@@ -18,7 +19,7 @@ anything personal in it. Each person's setup lives in their own `~/.git_master/`
 
 The person's notes: @~/.git_master/NOTES.md
 
-Code: `setup.sh` (first run, `add`, `clone`), `sync.sh` (status / up / down), `push.sh`,
+Code: `setup.sh` (first run, `add`, `clone`, `move`), `sync.sh` (status / up / down), `push.sh`,
 `ignore.sh` (keep files out), `nightly.sh`, `gm.py` (the config), `visualize.py`, `commit_message.py`, `audit_pii.py`,
 `safety.gitignore` (credential/cache rules for every repo), `hooks/git_guard.py`. `tools/` holds
 `gh` and `gitleaks` for this computer (downloaded by setup.sh, not in git).
@@ -35,19 +36,34 @@ person. Walk them through it, one step at a time, in plain words:
 1. `./setup.sh`: installs the tools, logs in to GitHub in the browser, creates `~/.git_master/`.
    On a Mac the first git command may ask to install Apple's developer tools: tell them to click
    Install and wait a few minutes.
-2. Find their folders: `./gm.py scan ~/projects ~/Documents` (or wherever they work) lists folders,
+2. Who they are and where the online copies go:
+   - `./gm.py get git_name` and `./gm.py get git_email`: the name and email on their commits, taken
+     from git's own settings, often empty on a new computer. Ask, then `./gm.py set git_name "<name>"`
+     and `./gm.py set git_email <email>`.
+   - The online copies go to their own GitHub account unless they choose an organization they belong
+     to (`tools/gh api user/orgs --jq '.[].login'`), such as their company's, which then keeps the
+     copies when they leave. Ask with AskUserQuestion; for an organization: `./gm.py set github_owner
+     <org>`. Say who can read them there: the organization's owners, and every member if the
+     organization gives members read access to all its repos.
+3. Find their folders: `./gm.py scan ~/projects ~/Documents` (or wherever they work) lists folders,
    whether each is a git repo, and its GitHub copy. Ask with AskUserQuestion (multi-select) which to
    back up. Add only what they pick; suggest leaving out folders with videos, downloads or other
-   people's files.
-3. For each picked folder: `./setup.sh add <folder> [name]`. It never changes or deletes files; it
+   people's files. Ask whether to remember the parent folders (`./gm.py watch <folder>...`), so new
+   folders there are spotted later.
+4. For each picked folder: `./setup.sh add <folder> [name]`. It never changes or deletes files; it
    runs `git init` where there is no repo yet and creates a private GitHub repo as the online copy.
-   Ask whether to remember the parent folders as `watch_dirs` (to spot new folders later).
-4. First backup of each: `./nightly.sh --no-slack <name>` (three gates, PII audit, commit, push).
+   A folder that already has a GitHub copy keeps backing up there (a team's shared repo, or one in
+   their own account). If they want it with the others: `./setup.sh move <name> <owner>` makes a new
+   private repo there its online copy; the old copy stays on GitHub untouched, for them to archive
+   or delete.
+5. First backup of each: `./nightly.sh --no-slack <name>` (three gates, PII audit, commit, push).
    Anything it holds needs their decision (see "Held repos").
-5. Their own setup should be backed up too: `./setup.sh add ~/.git_master git_master_config`.
-6. Optional, on a Linux computer that is always on: `./nightly.sh install` backs everything up at
-   01:00. Only one computer per set of repos runs it. Otherwise they say "back up my work".
-7. Tell them what to say from now on: "back up my work", "get the latest changes", "visualize my
+6. Their own setup should be backed up too: `./setup.sh add ~/.git_master git_master_config`. It
+   always goes to their own account, never an organization: it holds their notes and rules.
+7. Optional, on a Linux computer that is always on: `./nightly.sh install` backs everything up at
+   01:00 (the computer's time). Only one computer per set of repos runs it. On a Mac nothing is
+   scheduled: they say "back up my work".
+8. Tell them what to say from now on: "back up my work", "get the latest changes", "visualize my
    project", "keep this file out of git". Anything personal you learn goes into
    `~/.git_master/NOTES.md`.
 
@@ -175,6 +191,10 @@ private page; links are kept in `~/.git_master/visualize/urls.json`.
 
 - Add a folder: `./setup.sh add <folder> [name]`, then `./nightly.sh --no-slack <name>`.
 - Stop backing one up: `./gm.py remove <name>` (folder and GitHub repo stay).
+- Back a repo up to another account or organization: `./setup.sh move <name> <owner>`, then
+  `./sync.sh down <name>` and `./push.sh <name>`. The old copy stays on GitHub as it was.
+- New online copies to another account or organization from now on: `./gm.py set github_owner <owner>`
+  (repos already listed keep theirs; move them one by one).
 - Another computer: clone git_master, then their setup if it was backed up
   (`gh repo clone <owner>/git_master_config ~/.git_master`), then `./setup.sh`, then
   `./setup.sh clone <name>` for each repo they want there. `.env` files and other secrets are never

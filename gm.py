@@ -12,6 +12,11 @@ Everything personal lives outside the code, in ~/.git_master/ (or $GIT_MASTER_HO
   gm.py remove <name>             stop looking after a repo (the folder and GitHub stay)
   gm.py scan [folders...]         folders under watch_dirs (or the given ones) not in the config yet
   gm.py get <key>                 one setting, for the shell scripts
+  gm.py set <key> <value>         change a setting: github_owner (your account or an organization you are in, where
+                                  new online copies go), git_name, git_email, slack_post (JSON; "" removes it)
+  gm.py watch [folders...]        add folders to watch_dirs (where scan looks); without folders: list them
+  gm.py unwatch <folders...>      take folders off watch_dirs
+  gm.py github <name> <owner/repo>  set a repo's online copy (setup.sh add and move use it)
   gm.py tsv [names...]            "name<TAB>folder" per repo, for the shell scripts
   gm.py slug <name>               its GitHub repo, owner/name (the folder's own, or github_owner/name)
 """
@@ -162,6 +167,83 @@ def cmd_get(args):
     print(value if isinstance(value, str) else json.dumps(value))
 
 
+SETTINGS = {"github_owner": "your GitHub account, or an organization you are in",
+            "git_name": "the name on new commits", "git_email": "the email on new commits",
+            "slack_post": "the nightly summary's Slack poster, as JSON"}
+
+
+def cmd_set(args):
+    if len(args) != 2 or args[0] not in SETTINGS:
+        die("usage: gm.py set <key> <value>, key one of: " + ", ".join(f"{k} ({v})" for k, v in SETTINGS.items()))
+    key, value = args
+    cfg = load()
+    if key == "slack_post":
+        if not value:
+            cfg.pop(key, None)
+            save(cfg)
+            print("slack_post removed: the nightly sends no summary")
+            return
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError as e:
+            die(f"slack_post must be JSON, like the one in config.example.json: {e}")
+    elif key == "github_owner":
+        if not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})", value):
+            die(f"{value!r} is not a GitHub account or organization name")
+        # Repos already listed keep the online copy they have (a repo without "github" follows github_owner, and its
+        # pushes would stop: "origin is not ..."). To move one too: setup.sh move.
+        kept = []
+        for p in cfg["projects"]:
+            if not p.get("github"):
+                slug = github_of(folder(p["path"])) or (f"{cfg['github_owner']}/{p['name']}" if cfg.get("github_owner") else "")
+                if slug and slug.split("/")[0].lower() != value.lower():
+                    p["github"] = slug
+                    kept.append(f"{p['name']} ({slug})")
+        if kept:
+            print("these stay where they are (./setup.sh move <name> " + value + " to move one): " + ", ".join(kept))
+    cfg[key] = value
+    save(cfg)
+    print(f"{key} = {json.dumps(value, ensure_ascii=False)}")
+
+
+def cmd_watch(args):
+    cfg = load()
+    dirs = cfg.setdefault("watch_dirs", [])
+    for a in args:
+        f = folder(a)
+        if not f.is_dir():
+            die(f"{f} is not a folder")
+        if short(f) not in [short(folder(d)) for d in dirs]:
+            dirs.append(short(f))
+    if args:
+        save(cfg)
+    print("watch_dirs: " + (", ".join(dirs) if dirs else "none (add some: gm.py watch ~/projects)"))
+
+
+def cmd_unwatch(args):
+    cfg = load()
+    gone = {short(folder(a)) for a in args}
+    before = cfg.get("watch_dirs", [])
+    cfg["watch_dirs"] = [d for d in before if short(folder(d)) not in gone]
+    if len(cfg["watch_dirs"]) == len(before):
+        die(f"not in watch_dirs: {' '.join(args)}")
+    save(cfg)
+    print("watch_dirs: " + (", ".join(cfg["watch_dirs"]) or "none"))
+
+
+def cmd_github(args):
+    if len(args) != 2 or not re.fullmatch(r"[A-Za-z0-9-]+/[A-Za-z0-9._-]+", args[1]):
+        die("usage: gm.py github <name> <owner/repo>")
+    cfg = load()
+    for p in cfg["projects"]:
+        if p["name"] == args[0]:
+            p["github"] = args[1]
+            save(cfg)
+            print(f"{args[0]}: online copy {args[1]}")
+            return
+    die(f"no repo called {args[0]!r}")
+
+
 def cmd_tsv(args):
     cfg, want = load(), set(args)
     unknown = want - {p["name"] for p in cfg["projects"]}
@@ -174,7 +256,8 @@ def cmd_tsv(args):
 
 if __name__ == "__main__":
     cmds = {"init": cmd_init, "list": cmd_list, "add": cmd_add, "remove": cmd_remove,
-            "scan": cmd_scan, "get": cmd_get, "tsv": cmd_tsv, "slug": cmd_slug}
+            "scan": cmd_scan, "get": cmd_get, "tsv": cmd_tsv, "slug": cmd_slug, "set": cmd_set,
+            "watch": cmd_watch, "unwatch": cmd_unwatch, "github": cmd_github}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
         print(__doc__)
         sys.exit(0 if len(sys.argv) < 2 else 1)

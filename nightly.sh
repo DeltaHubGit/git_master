@@ -18,7 +18,6 @@ source "$(dirname "$0")/lib.sh"
 
 OUT="$HOME/routine-output/git-backup"
 POST_HOUR=8
-TZ_NAME=Europe/Ljubljana
 DOC_RE='\.(pdf|docx?|xlsx|pptx|rtf|odt)$'
 
 held=(); pushed=(); unchanged=(); REPORT=""; DONE=""; NO_SLACK=""
@@ -107,10 +106,14 @@ on_exit() {
 
 night() {
   local today text
-  today="$(TZ=$TZ_NAME date +%F)"
+  today="$(date +%F)"
   mkdir -p "$OUT/$today"; REPORT="$OUT/$today/report.txt"; : > "$REPORT"
   ln -sfn "$OUT/$today" "$OUT/latest"
-  exec 9>"$OUT/.lock"; flock -n 9 || { echo "another git-backup run is in progress"; exit 1; }
+  # One run at a time. Python's flock, not the flock command, which macOS lacks (every run there stopped here). The
+  # lock belongs to fd 9, which this script keeps open, so it lasts until the run ends, also when it crashes.
+  exec 9>"$OUT/.lock"
+  python3 -c 'import fcntl; fcntl.flock(9, fcntl.LOCK_EX | fcntl.LOCK_NB)' 2>/dev/null \
+    || { echo "another git-backup run is in progress"; exit 1; }
   exec > >(tee -a "$REPORT") 2>&1
   trap on_exit EXIT
   log "git backup from $MACHINE, $(date '+%F %T')${*:+ (only: $*)}"
@@ -123,7 +126,7 @@ night() {
   [ ${#held[@]} -gt 0 ] && printf '%s\n' "${held[@]}" > "$OUT/$today/held.txt"
   if [ -z "$NO_SLACK" ]; then
     printf '%s\n' "$text" > "$OUT/pending-slack.txt"
-    if [ "$(TZ=$TZ_NAME date +%-H)" -ge "$POST_HOUR" ]; then post; fi
+    if [ "$(date +%H)" -ge "$POST_HOUR" ]; then post; fi
   fi
   DONE=1
 }

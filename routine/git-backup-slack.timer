@@ -1,8 +1,8 @@
 [Unit]
-Description=Post the git backup result to Slack every morning at 08:00 Slovenian time
+Description=Post the git backup result to Slack every morning at 08:00 (this computer's time)
 
 [Timer]
-OnCalendar=*-*-* 08:00:00 Europe/Ljubljana
+OnCalendar=*-*-* 08:00:00
 Persistent=true
 
 [Install]

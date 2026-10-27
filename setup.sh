@@ -6,6 +6,8 @@
 #   ./setup.sh add <folder> [name]  look after a folder: list it in the config; if it is not a git repo yet,
 #                                   make it one, with a new private GitHub repo as its online copy
 #   ./setup.sh clone <name>         a listed repo whose folder is missing here: clone it from GitHub
+#   ./setup.sh move <name> <owner>  back a repo up to <owner> (an account or organization) from now on: a new private
+#                                   repo there becomes its online copy; the old one on GitHub stays as it is
 #
 # Nothing in the folders is changed or deleted: add only runs `git init` where there is no repo yet.
 set -euo pipefail
@@ -81,6 +83,12 @@ add_repo() {
   apply_local_excludes "$name" "$dir"
   if ! git -C "$dir" remote get-url origin >/dev/null 2>&1; then
     slug="$(python3 "$ROOT/gm.py" slug "$name")"
+    if [ "$dir" = "$(cd "$GM_HOME" 2>/dev/null && pwd)" ]; then
+      # this person's own setup (their notes and rules) stays in their own account, even when github_owner is an
+      # organization whose members could read it
+      slug="$("$GH" api user --jq .login)/$name"
+      python3 "$ROOT/gm.py" github "$name" "$slug" >/dev/null
+    fi
     [ -n "$slug" ] || { owner="$("$GH" api user --jq .login)"; slug="$owner/$name"; }
     if "$GH" repo view "$slug" >/dev/null 2>&1; then
       [ "$("$GH" repo view "$slug" --json visibility --jq .visibility)" = PRIVATE ] \
@@ -109,9 +117,35 @@ clone_repo() {
   echo "$name: cloned into $dir"
 }
 
+move_repo() {
+  local name="${1:-}" owner="${2:-}" dir old slug
+  { [ -n "$name" ] && [ -n "$owner" ]; } || { echo "usage: ./setup.sh move <name> <owner>" >&2; exit 1; }
+  dir="$(repo_dir "$name")"
+  [ -d "$dir/.git" ] || { echo "$name: $dir is not a git repo yet: ./setup.sh add $dir" >&2; exit 1; }
+  old="$(python3 "$ROOT/gm.py" slug "$name")"
+  slug="$owner/${old##*/}"; [ -n "$old" ] || slug="$owner/$name"
+  [ "$slug" != "$old" ] || { echo "$name: already backed up to $slug"; return; }
+  if "$GH" repo view "$slug" >/dev/null 2>&1; then
+    [ "$("$GH" repo view "$slug" --json visibility --jq .visibility)" = PRIVATE ] \
+      || { echo "  STOP: $slug already exists and is not private" >&2; exit 1; }
+    echo "  $slug already exists on GitHub; using it as the online copy"
+  else
+    "$GH" repo create "$slug" --private >/dev/null
+    echo "  created private repo $slug"
+  fi
+  if git -C "$dir" remote get-url origin >/dev/null 2>&1; then git -C "$dir" remote set-url origin "https://github.com/$slug.git"
+  else git -C "$dir" remote add origin "https://github.com/$slug.git"; fi
+  git -C "$dir" fetch -q --prune origin || true   # forget the old copy's branches; nothing local changes
+  python3 "$ROOT/gm.py" github "$name" "$slug" >/dev/null
+  echo "  $name now backs up to $slug"
+  [ -z "$old" ] || echo "  the old copy $old stays on GitHub as it was: archive or delete it there when it is no longer needed"
+  echo "  next: ./sync.sh down $name, then ./push.sh $name"
+}
+
 case "${1:-}" in
   "")    first_run ;;
   add)   shift; add_repo "$@" ;;
   clone) shift; clone_repo "$@" ;;
-  *)     sed -n '2,11p' "$0"; exit 1 ;;
+  move)  shift; move_repo "$@" ;;
+  *)     sed -n '2,13p' "$0"; exit 1 ;;
 esac

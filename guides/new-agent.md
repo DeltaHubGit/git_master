@@ -22,10 +22,14 @@ board-cli new-agent <name>          # Claude
 board-cli new-agent <name> --gpt    # ChatGPT
 ```
 
-The board makes `~/projects/work/<name>`, marks it trusted for Claude Code and starts its first session, so it is on
-their board at once. Never `mkdir` an agent's folder yourself: a folder made by hand is not trusted, and a session the
-board starts there stops at Claude's trust question where nobody can answer it (it looks like loading for ever).
-If it says the name exists, ask for another name; never reuse or overwrite a folder.
+The board makes `~/projects/work/<name>` and marks it trusted for Claude Code (with `--gpt`: GPT's kit in it). Nothing
+runs there yet, on purpose: its instructions go in first (step 3), then you start it (step 4). Never `mkdir` an
+agent's folder yourself: a folder made by hand is not trusted, and a session the board starts there stops at Claude's
+trust question where nobody can answer it (it looks like loading for ever). If it says the name exists, ask for
+another name; never reuse or overwrite a folder.
+
+If they made the agent themselves already (on the board: Cmd+K, Create a new worker), skip this step: the folder is
+there, and so is its first session.
 
 ## 3. Write its instructions
 
@@ -69,10 +73,18 @@ password, a customer's personal data or anything private into these files: they 
 
 Show them the file in plain words ("this is what it will know about itself") and change it until they are happy.
 
-## 4. A fresh session, then a test
+## 4. Start it, then a test
 
-The first session started before the instructions existed, so it does not know them: on the board, open the agent and
-click **Start fresh session…** (ChatGPT: its card's moon, then New session in it). Then they ask it, in the new session:
+As soon as its instructions are written, start it yourself, so they see their new agent the moment you are done:
+
+```
+board-cli new-session <name>
+```
+
+It starts the agent's first session (it reads its instructions as it starts) and marks it NEW on their board, so it
+shows whatever their filters. If it says a session already runs there (they made the agent themselves), start
+nothing: tell them that open session does not know the new instructions yet, and **Start fresh session…** on its card
+loads them (it is their session, their choice). Then they ask it, in the new session:
 
 > What are you for, and who would you ask about <something another agent owns>?
 

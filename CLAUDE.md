@@ -187,6 +187,11 @@ pills, ahead/behind; hollow dot = not on GitHub yet; click a commit for its mess
 "Uncommitted changes" lists the working files). The `visualize` skill publishes it as the repo's
 private page; links are kept in `~/.git_master/visualize/urls.json`.
 
+## Claude in Chrome ("set up Chrome", "let my agent use my browser")
+
+On a shared computer, their agents can use Chrome on their own laptop. Walk them through
+`guides/claude-in-chrome.md`, step by step; its first step checks whether the computer allows it yet.
+
 ## Adding, removing, another computer
 
 - Add a folder: `./setup.sh add <folder> [name]`, then `./nightly.sh --no-slack <name>`.

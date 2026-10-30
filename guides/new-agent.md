@@ -10,17 +10,20 @@ Go one step at a time, in plain words: the person is not technical and never use
   does, what it knows, which data is its own, which tools or websites it uses.
 - **What it must never do** (send anything without asking, change prices, delete rows, …).
 - **Which of their other agents it works with**, and for what (who it asks, who will ask it).
-- **Claude or ChatGPT.** Claude unless they ask for ChatGPT; offer ChatGPT only where it is installed
-  (`test -x /usr/local/bin/codex`).
+- **What it runs on: Claude or ChatGPT.** Always ask (AskUserQuestion with both as options), never pick for them,
+  even when it seems obvious: it is their choice. Offer ChatGPT only where it is installed
+  (`test -x /usr/local/bin/codex`); where it is not, tell them it will be a Claude agent.
 - **Its name:** short, lower case, letters, digits and `_` (`sheets_assistant`); it says what the agent does.
   Propose one, let them change it.
 
 ## 2. Make it with the board, never by hand
 
 ```
-board-cli new-agent <name>          # Claude
-board-cli new-agent <name> --gpt    # ChatGPT
+board-cli new-agent <name> --claude    # Claude
+board-cli new-agent <name> --gpt       # ChatGPT
 ```
+
+One of the two is required: without it the board makes nothing and tells you to ask.
 
 The board makes `~/projects/work/<name>` and marks it trusted for Claude Code (with `--gpt`: GPT's kit in it). Nothing
 runs there yet, on purpose: its instructions go in first (step 3), then you start it (step 4). Never `mkdir` an

@@ -189,7 +189,8 @@ private page; links are kept in `~/.git_master/visualize/urls.json`.
 
 ## A new agent ("make me an agent for …", "create a new worker")
 
-On a shared computer: `guides/new-agent.md`. Make it with `board-cli new-agent <name> [--gpt]`, never with `mkdir`
+On a shared computer: `guides/new-agent.md`. Ask them what it runs on (Claude or ChatGPT), never pick
+for them. Make it with `board-cli new-agent <name> --claude|--gpt`, never with `mkdir`
 (a folder made by hand is not trusted and its sessions cannot start), write its CLAUDE.md (or its AGENTS.md section),
 then start it with `board-cli new-session <name>` (not where they already have a session open), test it, back it up.
 

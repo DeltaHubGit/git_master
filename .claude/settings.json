@@ -27,7 +27,13 @@
       "Bash(git pull --rebase*)",
       "Bash(git pull -r*)",
       "Bash(git -C * pull --rebase*)",
-      "Bash(git -C * pull -r*)"
+      "Bash(git -C * pull -r*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(~/bridge_folder/*KEY*)",
+      "Read(~/bridge_folder/*TOKEN*)",
+      "Read(~/bridge_folder/*SECRET*)",
+      "Read(~/bridge_folder/*PASSWORD*)"
     ]
   },
   "hooks": {

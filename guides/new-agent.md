@@ -67,7 +67,8 @@ into `~/bridge_folder` (that asks them first).
 ## Keys and passwords
 <only if it uses a service with a key: which service, and that its scripts read the key from `.env` in this folder>
 Never ask for a key, password or token in the chat, and never write one into a file yourself. A key goes into this
-folder's `.env` through the admin (company keys), never through you; you cannot open `.env` files, by design.
+folder's `.env` through git_master (<person> asks it: "put my <service> key into <agent>"; the key never passes
+through a chat) or through the admin (company keys), never through you; you cannot open `.env` files, by design.
 ```
 
 What not to write there: where things are on this computer, the bridge folder, the inbox, the safety rules, how to

@@ -21,6 +21,7 @@ The person's notes: @~/.git_master/NOTES.md
 
 Code: `setup.sh` (first run, `add`, `clone`, `move`), `sync.sh` (status / up / down), `push.sh`,
 `ignore.sh` (keep files out), `nightly.sh`, `gm.py` (the config), `visualize.py`, `commit_message.py`, `audit_pii.py`,
+`put_key.py` (an API key from the bridge folder into an agent's `.env`, unseen),
 `safety.gitignore` (credential/cache rules for every repo), `hooks/git_guard.py`. `tools/` holds
 `gh` and `gitleaks` for this computer (downloaded by setup.sh, not in git).
 
@@ -64,8 +65,8 @@ person. Walk them through it, one step at a time, in plain words:
    01:00 (the computer's time). Only one computer per set of repos runs it. On a Mac nothing is
    scheduled: they say "back up my work".
 8. Tell them what to say from now on: "back up my work", "get the latest changes", "visualize my
-   project", "keep this file out of git". Anything personal you learn goes into
-   `~/.git_master/NOTES.md`.
+   project", "keep this file out of git", "put my API key into <agent>". Anything personal you learn
+   goes into `~/.git_master/NOTES.md`.
 
 ## Commit messages
 
@@ -154,6 +155,35 @@ Already pushed something sensitive? A password, key or token counts as leaked: t
 change it or revoke it first. Removing a file from every old version means rewriting history and
 force-pushing, which breaks rule 4 and makes everyone re-clone: never do it yourself; explain it and
 leave the decision and the work to the owner.
+
+## A key for an agent ("my agent needs an API key", "how do I give it my key safely")
+
+The key goes from the person's laptop into the agent's `.env` without anyone reading it: not you, not the agent, not
+the chat. `put_key.py` moves it; you only ever see its name and length.
+
+1. Which agent (its folder, e.g. `~/projects/work/<agent>`) and which service. Find the name the agent's code reads:
+   `grep -rn --exclude='.env*' "getenv\|environ\|process.env" <folder>` or its README. With no code yet, use the
+   service's usual name (`OPENAI_API_KEY`, `GEMINI_API_KEY`). `./put_key.py --check <NAME> <folder>` says whether it
+   is set already (yes/no and the length).
+2. Tell the person: never paste the key into the chat. On the laptop, copy the key from the service's page, then
+   save it into the bridge folder (in their Documents, the folder whose name ends in `_bridge_folder`) as `<NAME>.txt`:
+   - Mac: open Terminal, paste this line and press Enter: `pbpaste > ~/Documents/*_bridge_folder/<NAME>.txt`
+   - Windows: in PowerShell, `Get-Clipboard | Set-Content -Encoding utf8 "$((Resolve-Path ~\Documents\*_bridge_folder).Path)\<NAME>.txt"`
+   - Or as a plain text file, named exactly `<NAME>.txt` (TextEdit: Format > Make Plain Text before saving).
+   On a computer of their own with no bridge folder: any file in their home, then `--from <file>` below.
+3. When they say it is there: `./put_key.py <NAME> <folder>...` (several agents with the same key: all folders in one
+   run). It waits up to a minute for the sync, writes `NAME=...` into each folder's `.env` (mode 600, an older value
+   replaced), makes sure git ignores `.env`, deletes the key file (so it goes from the laptop too) and prints only the
+   name and length.
+4. A `REFUSED` line says why (rich text, two lines, `.env` already in git, not their own folder): explain it plainly,
+   and once it is fixed run it again. After a refusal the key file is still in the bridge folder: say so.
+5. Tell them it is done and that the agent's scripts read it from `.env` the next time they run (python-dotenv's
+   `load_dotenv()` or the like).
+
+Never ask for a key in the chat, open the key file or a `.env` (Read, cat, grep, an editor), print the value, or write
+a key into a file with your own tools. A key pasted into the chat counts as leaked (it stays in the transcript): tell
+them to revoke it at the service and make a new one, then do it this way. On a shared computer, company keys (one key
+for many people) come from the admin, not from this.
 
 ## Conflicts
 

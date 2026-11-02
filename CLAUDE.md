@@ -167,9 +167,17 @@ the chat. `put_key.py` moves it; you only ever see its name and length.
    service's usual name (`OPENAI_API_KEY`, `GEMINI_API_KEY`). `./put_key.py --check <NAME> <folder>` says whether it
    is set already (yes/no and the length).
 2. Tell the person: never paste the key into the chat. On the laptop, copy the key from the service's page, then
-   save it into the bridge folder (in their Documents, the folder whose name ends in `_bridge_folder`) as `<NAME>.txt`:
-   - Mac: open Terminal, paste this line and press Enter: `pbpaste > ~/Documents/*_bridge_folder/<NAME>.txt`
-   - Windows: in PowerShell, `Get-Clipboard | Set-Content -Encoding utf8 "$((Resolve-Path ~\Documents\*_bridge_folder).Path)\<NAME>.txt"`
+   save it into the bridge folder (in their Documents, the folder whose name ends in `_bridge_folder`) as `<NAME>.txt`.
+   Give each line they paste in a code block of its own (a fenced block, which the chat shows with a copy button),
+   never inline in a sentence:
+   - Mac: open Terminal, paste this line and press Enter:
+     ```
+     pbpaste > ~/Documents/*_bridge_folder/<NAME>.txt
+     ```
+   - Windows: open PowerShell, paste this line and press Enter:
+     ```
+     Get-Clipboard | Set-Content -Encoding utf8 "$((Resolve-Path ~\Documents\*_bridge_folder).Path)\<NAME>.txt"
+     ```
    - Or as a plain text file, named exactly `<NAME>.txt` (TextEdit: Format > Make Plain Text before saving).
    On a computer of their own with no bridge folder: any file in their home, then `--from <file>` below.
 3. When they say it is there: `./put_key.py <NAME> <folder>...` (several agents with the same key: all folders in one

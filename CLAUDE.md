@@ -20,7 +20,8 @@ anything personal in it. Each person's setup lives in their own `~/.git_master/`
 The person's notes: @~/.git_master/NOTES.md
 
 Code: `setup.sh` (first run, `add`, `clone`, `move`), `sync.sh` (status / up / down), `push.sh`,
-`ignore.sh` (keep files out), `nightly.sh`, `gm.py` (the config), `visualize.py`, `commit_message.py`, `audit_pii.py`,
+`ignore.sh` (keep files out), `nightly.sh`, `gm.py` (the config), `visualize.py`, `diffview.py` (a conflict or diff
+side by side), `commit_message.py`, `audit_pii.py`,
 `put_key.py` (an API key from the bridge folder into an agent's `.env`, unseen),
 `safety.gitignore` (credential/cache rules for every repo), `hooks/git_guard.py`. `tools/` holds
 `gh` and `gitleaks` for this computer (downloaded by setup.sh, not in git).
@@ -187,9 +188,11 @@ for many people) come from the admin, not from this.
 
 ## Conflicts
 
-When `down` (or the nightly) stops on a conflict: show the owner both versions side by side, theirs
-in the repo folder (committed) and GitHub's in `~/.git_master/conflicts/<name>/<path>`, and let them
-pick A (this computer), B (GitHub) or a mix. Then: `git -C <dir> merge origin/main`, for each file
+When `down` (or the nightly) stops on a conflict, or a branch won't merge: show the owner both versions
+side by side with the `show-diff` skill (`python3 diffview.py merge <name> [branch]`, an IDE-style page:
+this computer | result | theirs), and let them pick A (this computer), B (GitHub or the branch), both, or
+a mix. Use the same page whenever anyone asks to see a conflict or a diff, or where a conflict is. GitHub's
+version is also saved in `~/.git_master/conflicts/<name>/<path>`. Then: `git -C <dir> merge origin/main`, for each file
 `git -C <dir> checkout --ours -- <path>` (A), `--theirs` (B) or write the combined text,
 `git -C <dir> add <path>`, `git -C <dir> commit --no-edit`, then `./push.sh <name>`. Delete
 `conflicts/<name>/` afterwards. Never pick a side for them. Markdown merges line by line, so only the
@@ -215,7 +218,8 @@ otherwise show what was flagged and let them decide between `rules/<name>.exclud
 `python3 visualize.py [name]` draws a repo's history as a Sourcetree-style page (lanes, branch
 pills, ahead/behind; hollow dot = not on GitHub yet; click a commit for its message and files;
 "Uncommitted changes" lists the working files). The `visualize` skill publishes it as the repo's
-private page; links are kept in `~/.git_master/visualize/urls.json`.
+private page; links are kept in `~/.git_master/visualize/urls.json`. A conflict or a diff ("show me the
+conflict", "what changed in this file") gets its own page from `diffview.py` through the `show-diff` skill.
 
 ## A new agent ("make me an agent for …", "create a new worker")
 

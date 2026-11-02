@@ -26,10 +26,10 @@ while IFS=$'\t' read -r name dir; do
     echo "  SKIPPED: gitleaks found secrets in history: ~/.git_master/reports/$name.git.json"
     continue
   fi
-  if [ -n "$(git -C "$dir" status --porcelain)" ]; then
-    echo "  SKIPPED: uncommitted changes"
-    continue
-  fi
+  # Only commits are pushed, so files changed after the commit (a collector or a session still writing) are no reason
+  # to hold back what was committed and scanned: they stay on this computer for the next backup
+  dirty="$(git -C "$dir" status --porcelain | wc -l)"
+  [ "$dirty" -gt 0 ] && echo "  note: $dirty uncommitted change(s) stay on this computer; only commits are pushed"
 
   slug="$(python3 "$ROOT/gm.py" slug "$name")"; [ -n "$slug" ] || slug="$OWNER/$name"
   if ! "$GH" repo view "$slug" >/dev/null 2>&1; then

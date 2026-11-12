@@ -114,6 +114,11 @@ is watching (the nightly, background jobs), write a message that says what chang
 7. `./push.sh [names]`: re-scans the full history, refuses anything not private, plain push only.
 8. `./sync.sh status` again: every repo should read "in sync" and "identical".
 
+A project on a side branch (a bigger change under way, worked on in its own folder) is backed up on that branch:
+`status` and `down` compare with GitHub's copy of the same branch, `push.sh` and the nightly push it, with the same
+checks. Its main stays as it was until the person merges the branch (a normal merge, never a rebase). A clone that is
+on no branch at all (detached) is not pushed and the nightly holds it.
+
 ## Get the latest ("update this computer")
 
 1. `./sync.sh status`. Uncommitted work: back it up first, since `down` refuses to pull over it.

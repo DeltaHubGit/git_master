@@ -2,6 +2,7 @@
 # Scan each repo's full git history, make sure its GitHub repo exists and is private, then push.
 # A repo with any unreviewed gitleaks finding is skipped. A plain push only, never forced: if
 # GitHub has commits this clone lacks, the push is refused and ./sync.sh down merges them first.
+# It pushes the branch the clone is on: main, or a side branch while a bigger change is under way.
 # After each push, main is branch-protected on GitHub (rule 5, needs GitHub Pro for private repos).
 # Usage: ./push.sh [name ...]            (default: every repo in ~/.git_master/config.json)
 #        ./push.sh --protect [name ...]  only switch on branch protection, push nothing
@@ -46,7 +47,10 @@ while IFS=$'\t' read -r name dir; do
   fi
   git -C "$dir" remote get-url origin | grep -qE "[:/]$slug(\.git)?$" \
     || { echo "  SKIPPED: origin is not $slug"; continue; }
-  git -C "$dir" push -u origin main
-  echo "  pushed -> https://github.com/$slug"
+  branch="$(current_branch "$dir")"
+  [ -n "$branch" ] || { echo "  SKIPPED: not on a branch (detached); nothing pushed"; continue; }
+  git -C "$dir" push -u origin "$branch"
+  if [ "$branch" = main ]; then echo "  pushed -> https://github.com/$slug"
+  else echo "  pushed the side branch $branch -> https://github.com/$slug/tree/$branch"; fi
   protect_main "$slug"
 done < <(projects "$@")

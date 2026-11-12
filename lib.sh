@@ -20,6 +20,10 @@ mkdir -p "$REPORTS" 2>/dev/null || true
 # Print non-ASCII paths (e.g. "č") as-is instead of octal-escaped
 git() { command git -c core.quotepath=off "$@"; }
 
+# The branch a clone is on: "main" for most, a side branch while a bigger change is under way (it is then backed up
+# on that branch: status and down compare with GitHub's copy of it, push.sh pushes it). Empty when not on a branch.
+current_branch() { git -C "$1" symbolic-ref -q --short HEAD 2>/dev/null || true; }
+
 # Filenames that may hold personal/financial/identity data. New or changed files
 # matching this need an explicit decision in rules/<name>.allow or rules/<name>.exclude.
 SENSITIVE_NAME_RE='bank|iban|revolut|paypal|account[ _-]?confirm|statement|izpisek|passport|potni[ _-]?list|osebna|id[ _-]?card|driver.?s?[ _-]?licen|payslip|salary|pla[cč]a|(^|[^a-z])tax([^a-z]|$)|dav[cč]n|password|geslo|credential|secrets?([^a-z]|$)|secret[ _-]?key|client[ _-]?secret|recovery|backup[ _-]?codes|2fa|private[ _-]?key|wallet'

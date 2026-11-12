@@ -22,10 +22,17 @@ local_state() {
 }
 
 remote_state() {
-  local dir="$1" ab
+  local dir="$1" ab b
   git -C "$dir" fetch -q origin
-  git -C "$dir" rev-parse -q --verify origin/main >/dev/null 2>&1 || { echo "  backup vs GitHub: nothing on GitHub yet"; return; }
-  ab=$(git -C "$dir" rev-list --left-right --count HEAD...origin/main)
+  b="$(current_branch "$dir")"
+  [ -n "$b" ] || { echo "  backup vs GitHub: not on a branch (detached); nothing to compare"; return; }
+  [ "$b" = main ] || echo "  on the side branch $b: compared with GitHub's copy of that branch"
+  if ! git -C "$dir" rev-parse -q --verify "origin/$b" >/dev/null 2>&1; then
+    if [ "$b" = main ]; then echo "  backup vs GitHub: nothing on GitHub yet"
+    else echo "  backup vs GitHub: branch not on GitHub yet, $(git -C "$dir" rev-list --count HEAD --not --remotes=origin) commit(s) not pushed"; fi
+    return
+  fi
+  ab=$(git -C "$dir" rev-list --left-right --count "HEAD...origin/$b")
   set -- $ab
   if [ "$1" = 0 ] && [ "$2" = 0 ]; then echo "  backup vs GitHub: in sync"
   else echo "  backup vs GitHub: $1 commit(s) not pushed, $2 commit(s) on GitHub not pulled"; fi
@@ -48,7 +55,7 @@ cmd_up() {
     # Rule 1: commit before every pull. So up does not wait for GitHub: commit what is here,
     # then ./sync.sh down merges GitHub's new commits in.
     git -C "$dir" fetch -q origin
-    if [ -n "$(git -C "$dir" rev-list HEAD..origin/main 2>/dev/null)" ]; then
+    if [ -n "$(git -C "$dir" rev-list "HEAD..origin/$(current_branch "$dir")" 2>/dev/null)" ]; then
       echo "  GitHub has new commits too: commit this first, then ./sync.sh down $name merges them in"
     fi
     apply_local_excludes "$name" "$dir"
@@ -73,9 +80,13 @@ cmd_down() {
     echo "=== $name"
     [ -d "$dir/.git" ] || { echo "  not a git repo here: $dir (./setup.sh add $dir)"; fail=1; continue; }
     git -C "$dir" fetch -q origin
-    local base remote
+    local base remote b
+    # A clone on a side branch pulls GitHub's copy of that branch; main is merged into it when the person chooses
+    b="$(current_branch "$dir")"
+    [ -n "$b" ] || { echo "  STOP: not on a branch (detached); check out main or the branch being worked on"; fail=1; continue; }
     # A repo created on this computer has no commits on GitHub (or locally) until its first up + push
-    remote=$(git -C "$dir" rev-parse -q --verify origin/main 2>/dev/null) || { echo "  nothing on GitHub yet"; continue; }
+    remote=$(git -C "$dir" rev-parse -q --verify "origin/$b" 2>/dev/null) \
+      || { if [ "$b" = main ]; then echo "  nothing on GitHub yet"; else echo "  branch $b not on GitHub yet; nothing to pull"; fi; continue; }
     base=$(git -C "$dir" rev-parse -q --verify HEAD 2>/dev/null) \
       || { echo "  STOP: GitHub has commits but this clone has none; clone it properly (./setup.sh clone $name)"; fail=1; continue; }
     [ "$base" = "$remote" ] && { echo "  already up to date"; continue; }
@@ -92,8 +103,8 @@ cmd_down() {
     # computer's commit stays as it was) and stop for a person to pick.
     local out
     if git -C "$dir" merge-base --is-ancestor "$base" "$remote"; then
-      git -C "$dir" merge -q --ff-only origin/main || { echo "  STOP: fast-forward refused (above); nothing changed"; fail=1; continue; }
-    elif out=$(git -C "$dir" merge --no-ff --no-edit -m "Merge GitHub changes into $MACHINE" origin/main 2>&1); then
+      git -C "$dir" merge -q --ff-only "origin/$b" || { echo "  STOP: fast-forward refused (above); nothing changed"; fail=1; continue; }
+    elif out=$(git -C "$dir" merge --no-ff --no-edit -m "Merge GitHub changes into $MACHINE" "origin/$b" 2>&1); then
       echo "  merged: both this computer and GitHub had new commits; both kept"
     else
       local unmerged; unmerged="$(git -C "$dir" diff --name-only --diff-filter=U)"

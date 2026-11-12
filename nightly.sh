@@ -26,9 +26,12 @@ log() { printf '%s\n' "$*"; }
 hold() { held+=("$1"); log "  HELD: $2"; }
 join_comma() { local IFS=,; echo "$*" | sed 's/,/, /g'; }
 allow_list() { if [ -f "$RULES/$1.allow" ]; then grep -v '^#' "$RULES/$1.allow"; fi; }
-# Commits not on GitHub? A repo with no origin/main yet (first backup) counts as ahead if it has any commit.
+# Commits not on GitHub? Compared with GitHub's copy of the branch the clone is on (main, or a side branch).
+# A branch not on GitHub yet (a repo's first backup, a new side branch) counts as ahead if it has any commit.
 ahead() {
-  if git -C "$1" rev-parse -q --verify origin/main >/dev/null 2>&1; then [ -n "$(git -C "$1" rev-list origin/main..HEAD)" ]
+  local b; b="$(current_branch "$1")"
+  [ -n "$b" ] || return 0   # not on a branch: nothing can be pushed, so it is not backed up
+  if git -C "$1" rev-parse -q --verify "origin/$b" >/dev/null 2>&1; then [ -n "$(git -C "$1" rev-list "origin/$b..HEAD")" ]
   else git -C "$1" rev-parse -q --verify HEAD >/dev/null 2>&1; fi
 }
 

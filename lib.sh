@@ -40,14 +40,33 @@ repo_dir() { python3 "$ROOT/gm.py" tsv "$1" | cut -f2; }
 setting() { python3 "$ROOT/gm.py" get "$1"; }
 
 # Keep safety.gitignore + rules/<name>.exclude out of commits without touching the repo's own
-# .gitignore: they are written to the clone's .git/info/exclude
+# .gitignore: they are written to the clone's .git/info/exclude, in a block of git_master's own. Other lines there
+# belong to other programs and are kept: the agent board keeps its skill links (.claude/skills/<name>) out of the
+# agents' repos that way, and a link committed would point at a folder only this computer has.
 apply_local_excludes() {
-  local name="$1" dir="$2"
+  local name="$1" dir="$2" f="$2/.git/info/exclude" block keep=""
   mkdir -p "$dir/.git/info"
-  { echo "# Written by git_master; edit its safety.gitignore or ~/.git_master/rules/$name.exclude instead"
+  block="$(echo "# >>> git_master: edit its safety.gitignore or ~/.git_master/rules/$name.exclude instead of these lines"
     cat "$ROOT/safety.gitignore"
-    if [ -f "$RULES/$name.exclude" ]; then cat "$RULES/$name.exclude"; fi; } > "$dir/.git/info/exclude"
+    if [ -f "$RULES/$name.exclude" ]; then cat "$RULES/$name.exclude"; fi
+    echo "# <<< git_master: the lines below are other programs' (the agent board's skill links) and are kept")"
+  if [ -f "$f" ]; then
+    if grep -q '^# >>> git_master' "$f"; then
+      keep="$(awk '/^# >>> git_master/ {skip=1} !skip {print} /^# <<< git_master/ {skip=0}' "$f")"
+    elif grep -q '^# Written by git_master' "$f"; then
+      # the old format, all git_master's: keep only the lines added to it since (by the board)
+      keep="$(grep -vxF -f <(printf '%s\n' "$block") "$f" | grep -v '^# Written by git_master' || true)"
+    else
+      keep="$(cat "$f")"
+    fi
+  fi
+  { printf '%s\n' "$block"; if [ -n "$keep" ]; then printf '%s\n' "$keep"; fi; } > "$f.git_master-tmp"
+  mv "$f.git_master-tmp" "$f"
 }
+
+# A copy repo (copies.py: folders another program keeps, such as the agent board's skills) is refreshed from them
+# before it is looked at or backed up. Other repos: nothing happens.
+refresh_copy() { python3 "$ROOT/copies.py" refresh "$1"; }
 
 # During a merge conflict: save GitHub's side of each conflicted path (one per line on stdin) to
 # conflicts/<name>/<path>, so both versions survive the merge --abort that follows: this

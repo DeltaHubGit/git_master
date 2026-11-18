@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Back up the repos listed in ~/.git_master/config.json and bring GitHub's changes in.
-# Each repo is a folder on this computer that is its own git clone.
+# Each repo is a folder on this computer that is its own git clone. A copy repo (copies.py: another program's
+# folders, such as the agent board's skills) is refreshed from those folders first, by status and up.
 #
 #   ./sync.sh status [names]  what is uncommitted, and what differs from GitHub
 #   ./sync.sh up     [names]  stage each repo's changes and run the three safety gates (then commit, down, ./push.sh)
@@ -42,6 +43,7 @@ cmd_status() {
   projects "$@" | while IFS=$'\t' read -r name dir; do
     echo "=== $name"
     [ -d "$dir/.git" ] || { echo "  not a git repo here: $dir (./setup.sh add $dir)"; continue; }
+    refresh_copy "$name" || true
     remote_state "$dir"
     local_state "$name" "$dir"
   done
@@ -59,6 +61,7 @@ cmd_up() {
       echo "  GitHub has new commits too: commit this first, then ./sync.sh down $name merges them in"
     fi
     apply_local_excludes "$name" "$dir"
+    refresh_copy "$name" || { echo "  NOT STAGED: the copy could not be brought up to date (above)"; fail=1; continue; }
     git -C "$dir" add -A
 
     if git -C "$dir" diff --cached --quiet; then echo "  nothing to sync"; continue; fi

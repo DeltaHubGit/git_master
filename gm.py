@@ -19,6 +19,12 @@ Everything personal lives outside the code, in ~/.git_master/ (or $GIT_MASTER_HO
   gm.py github <name> <owner/repo>  set a repo's online copy (setup.sh add and move use it)
   gm.py tsv [names...]            "name<TAB>folder" per repo, for the shell scripts
   gm.py slug <name>               its GitHub repo, owner/name (the folder's own, or github_owner/name)
+  gm.py copy <name> <from> <to> [--skip PATTERN]...
+                                  make <name> a copy repo (copies.py): the folder <from> is copied into <to> in it
+                                  before every backup; --skip leaves out what matches (rsync patterns, /drafts/)
+  gm.py copy-links <name> <folders>...
+                                  record in <name>'s copy the links in these folders (globs allowed) that point into
+                                  the copied folders, so a restore can make them again
 """
 import json
 import os
@@ -244,6 +250,48 @@ def cmd_github(args):
     die(f"no repo called {args[0]!r}")
 
 
+def project(cfg, name):
+    for p in cfg["projects"]:
+        if p["name"] == name:
+            return p
+    die(f"no repo called {name!r}")
+
+
+def cmd_copy(args):
+    skips = [args[i + 1] for i, a in enumerate(args) if a == "--skip" and i + 1 < len(args)]
+    rest = [a for i, a in enumerate(args) if a != "--skip" and (i == 0 or args[i - 1] != "--skip")]
+    if len(rest) != 3:
+        die("usage: gm.py copy <name> <from> <to> [--skip PATTERN]...")
+    name, src, to = rest
+    if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]*(/[A-Za-z0-9_][A-Za-z0-9_.-]*)*", to) \
+            or to in ("links.tsv", "README.md") or ".git" in to.split("/") or ".." in to.split("/"):
+        die(f"bad place in the copy: {to!r} (a folder name like skills)")
+    cfg = load()
+    p = project(cfg, name)
+    src_f, repo = folder(src), folder(p["path"])
+    if src_f == repo or repo in src_f.parents or src_f in repo.parents:
+        die("the copied folder and the copy repo must not be inside each other")
+    copies = [c for c in p.get("copies", []) if c["to"] != to and folder(c["from"]) != src_f]
+    copies.append({"from": short(src_f), "to": to, **({"skip": skips} if skips else {})})
+    p["copies"] = copies
+    save(cfg)
+    print(f"{name}: {short(src_f)} is copied into {to}/" + (f" (without {', '.join(skips)})" if skips else ""))
+
+
+def cmd_copy_links(args):
+    if len(args) < 2:
+        die("usage: gm.py copy-links <name> <folders>...")
+    cfg = load()
+    p = project(cfg, args[0])
+    if not p.get("copies"):
+        die(f"{args[0]} copies no folders yet: gm.py copy first")
+    home = str(pathlib.Path.home())
+    p["links_in"] = [("~" + a[len(home):] if a.startswith(home + "/") else a) if "*" in a else short(folder(a))
+                     for a in args[1:]]
+    save(cfg)
+    print(f"{args[0]}: records the links in {', '.join(p['links_in'])}")
+
+
 def cmd_tsv(args):
     cfg, want = load(), set(args)
     unknown = want - {p["name"] for p in cfg["projects"]}
@@ -257,7 +305,8 @@ def cmd_tsv(args):
 if __name__ == "__main__":
     cmds = {"init": cmd_init, "list": cmd_list, "add": cmd_add, "remove": cmd_remove,
             "scan": cmd_scan, "get": cmd_get, "tsv": cmd_tsv, "slug": cmd_slug, "set": cmd_set,
-            "watch": cmd_watch, "unwatch": cmd_unwatch, "github": cmd_github}
+            "watch": cmd_watch, "unwatch": cmd_unwatch, "github": cmd_github,
+            "copy": cmd_copy, "copy-links": cmd_copy_links}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
         print(__doc__)
         sys.exit(0 if len(sys.argv) < 2 else 1)

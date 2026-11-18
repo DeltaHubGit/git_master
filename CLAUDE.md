@@ -23,6 +23,7 @@ Code: `setup.sh` (first run, `add`, `clone`, `move`), `sync.sh` (status / up / d
 `ignore.sh` (keep files out), `nightly.sh`, `gm.py` (the config), `visualize.py`, `diffview.py` (a conflict or diff
 side by side), `commit_message.py`, `audit_pii.py`,
 `put_key.py` (an API key from the bridge folder into an agent's `.env`, unseen),
+`copies.py` (a copy repo: folders another program keeps, such as the agent board's skills, copied in before each backup),
 `safety.gitignore` (credential/cache rules for every repo), `hooks/git_guard.py`. `tools/` holds
 `gh` and `gitleaks` for this computer (downloaded by setup.sh, not in git).
 
@@ -62,6 +63,8 @@ person. Walk them through it, one step at a time, in plain words:
    Anything it holds needs their decision (see "Held repos").
 6. Their own setup should be backed up too: `./setup.sh add ~/.git_master git_master_config`. It
    always goes to their own account, never an organization: it holds their notes and rules.
+   If they use the agent board (`~/.local/state/agent_board` exists), back up its skills too: see "The agent
+   board's skills".
 7. Optional, on a Linux computer that is always on: `./nightly.sh install` backs everything up at
    01:00 (the computer's time). Only one computer per set of repos runs it. On a Mac nothing is
    scheduled: they say "back up my work".
@@ -226,6 +229,46 @@ otherwise show what was flagged and let them decide between `rules/<name>.exclud
 `rules/<name>.allow` (reviewed OK) or a gitleaks false positive in `gitleaks-allow/`. Then run
 `./nightly.sh --no-slack <name>` or let the next night pick it up.
 
+## The agent board's skills ("back up my skills", "bring back a skill")
+
+The board keeps a person's skills in folders of its own, which cannot be git repos: the board's store
+(`~/.local/share/agent-board/skills/<name>`, a folder per skill), Recently deleted
+(`~/.local/share/agent-board/skills-trash/<id>`, whole folders for 30 days) and its records
+(`~/.local/state/agent_board/skills/`: meta.json, versions/ = History, trash/ = what Recently deleted lists).
+`copies.py` keeps a copy of them in a git repo of git_master's own, a **copy repo**, refreshed by `sync.sh status` and
+`up` (so by the nightly too) and then backed up like any other repo, through the same gates and PII audit. Each
+night's state stays in its history. Nothing in the board's folders is written by a backup.
+
+- Left out: the board's `drafts/` (unsaved typing, the most likely place for a pasted key or a half-cleaned text; it
+  is backed up once saved, as a version) and `incoming/` (a file being added, until confirmed); a skill's own `.git`
+  (its files are copied, its own history is not); `public-skills/` (copies of colleagues' public skills, made again
+  from the shared machine); whatever `safety.gitignore` keeps out (a `.env` in a skill stays on this computer).
+- `links.tsv` in the copy lists the links that give agents a skill (`<agent>/.claude/skills/<name>`, and
+  `~/.claude/skills/<name>` for every agent): they are in no repo on purpose (the board puts each in the agent's
+  `.git/info/exclude`; git_master writes only its own block there and keeps those lines).
+- Set up, once per person (the GitHub repo is created private, in `github_owner` like their other repos):
+  `mkdir -p ~/.local/share/git_master/board_skills`, then `./setup.sh add ~/.local/share/git_master/board_skills
+  board_skills`, then
+  `./gm.py copy board_skills ~/.local/share/agent-board/skills skills`,
+  `./gm.py copy board_skills ~/.local/share/agent-board/skills-trash skills-trash`,
+  `./gm.py copy board_skills ~/.local/state/agent_board/skills board-records --skip /drafts/ --skip /incoming/`,
+  `./gm.py copy-links board_skills ~/.claude/skills '~/projects/*/*/.claude/skills'`, then the first backup
+  (`./sync.sh up board_skills`, commit, `./sync.sh down board_skills`, `./push.sh board_skills`). A folder the board
+  has not made yet (Recently deleted before the first delete) counts as empty.
+- A gate that trips holds the copy like any repo: paths in `rules/board_skills.*` are paths in the copy
+  (`skills/<name>/...`, `board-records/...`).
+- **Restore** puts back only what is missing and never overwrites or deletes; it says what it left because something
+  else is in its place. A bad change to a skill: first the board's own History (Settings → Skills → the skill).
+  - Lost disk, or a folder gone: on a new computer `./setup.sh clone board_skills` first; then
+    `./copies.py restore board_skills` (the files of the last backup, and the agents' links with their exclude line).
+  - A skill as it was on an earlier night, or one deleted for good: `git -C ~/.local/share/git_master/board_skills
+    log --oneline -- skills/<name>` finds the night; if the skill is still there, show the owner the difference
+    first (`show-diff`) and, with their yes, move the live folder aside (into the board's Recently deleted, from the
+    page); then `./copies.py restore board_skills --at <commit> --only skills/<name>`. Its History:
+    `--only board-records/versions/<id>` (the id is in `board-records/meta.json`).
+  - Restart the board afterwards (`systemctl --user restart agent-board`) so its page reads them again.
+- Other folders a program keeps can be backed up the same way: `gm.py copy <name> <from> <to> [--skip PATTERN]`.
+
 ## Visualize ("show me the history")
 
 `python3 visualize.py [name]` draws a repo's history as a Sourcetree-style page (lanes, branch
@@ -256,7 +299,8 @@ On a shared computer, their agents can use Chrome on their own laptop. Walk them
   (repos already listed keep theirs; move them one by one).
 - Another computer: clone git_master, then their setup if it was backed up
   (`gh repo clone <owner>/git_master_config ~/.git_master`), then `./setup.sh`, then
-  `./setup.sh clone <name>` for each repo they want there. `.env` files and other secrets are never
+  `./setup.sh clone <name>` for each repo they want there; a copy repo (board_skills) then needs
+  `./copies.py restore <name>` to put its folders back. `.env` files and other secrets are never
   in any repo: copy them over separately.
 
 ## Learnings
